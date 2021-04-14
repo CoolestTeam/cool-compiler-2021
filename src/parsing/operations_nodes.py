@@ -1,21 +1,31 @@
 from expr_nodes import ExpressionNode
 
-class ArithBinOpNode(ExpressionNode):
+class BinaryOpNode(ExpressionNode):
+    def __init__(self):
+        super(BinaryOpNode, self).__init__()
+        pass
+
+class UnaryOpNode(ExpressionNode):
+    def __init__(self):
+        super(UnaryOpNode, self).__init__()
+        pass
+
+class ArithBinOpNode(BinaryOpNode):
     def __init__(self):
         super(ArithBinOpNode, self).__init__()
         pass
 
-class LogicBinOpNode(ExpressionNode):
+class LogicBinOpNode(BinaryOpNode):
     def __init__(self):
         super(LogicBinOpNode, self).__init__()
         pass
 
-class NotNode(ExpressionNode):
+class NotNode(UnaryOpNode):
     def __init__(self, expression):
         super(NotNode, self).__init__()
         self.expression = expression
 
-class LogicNotNode(ExpressionNode):
+class LogicNotNode(UnaryOpNode):
     def __init__(self, expression):
         super(LogicNotNode, self).__init__()
         self.expression = expression
