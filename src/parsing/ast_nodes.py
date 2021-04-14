@@ -48,3 +48,15 @@ class LetInitNode(AST):
         self.name = name
         self.let_type = let_type
         self.expression = expression
+
+class LetDefNode(AST):
+    def __init__(self, name, let_type):
+        super(LetDefNode, self).__init__()
+        self.name = name
+        self.let_type = let_type
+
+class FormalParamNode(AST):
+    def __init__(self, name, param_type):
+        super(FormalParamNode, self).__init__()
+        self.name = name
+        self.param_type = param_type
