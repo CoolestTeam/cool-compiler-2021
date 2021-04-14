@@ -65,3 +65,29 @@ class IsVoidNode(ExpressionNode):
     def __init__(self, expression):
         super(IsVoidNode, self).__init__()
         self.expression = expression
+
+class IdNode(ExpressionNode):
+    def __init__(self, name):
+        super(IdNode, self).__init__()
+        self.name = name
+
+class EqualsNode(ExpressionNode):
+    def __init__(self, left, right):
+        super(EqualsNode, self).__init__()
+        self.left = left
+        self.right = right
+
+class IntegerNode(ExpressionNode):
+    def __init__(self, value):
+        super(IntegerNode, self).__init__()
+        self.value = value
+
+class StringNode(ExpressionNode):
+    def __init__(self, value):
+        super(StringNode, self).__init__()
+        self.value = value
+
+class BooleanNode(ExpressionNode):
+    def __init__(self, value):
+        super(BooleanNode, self).__init__()
+        self.value = value
