@@ -54,7 +54,11 @@ class MyLexer():
             "true": "TRUE",
             "false": "FALSE",
             "not": "NOT",
-            "of": "OF",
+            "of": "OF"
+        }
+
+    def get_builtin_types(self):
+        return {
             "Object": "OBJECT_TYPE",
             "Int": "INT_TYPE",
             "String": "STRING_TYPE",
@@ -109,8 +113,8 @@ class MyLexer():
 
     # Build the lexer
     def build(self, **kwargs):
-        self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values())
-        self.reserved = list(self.get_reserved_keywds.values())
+        self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values()) + list(self.get_builtin_types.values())
+        self.reserved = list(self.get_reserved_keywds.values()) + + list(self.get_builtin_types.values())
         self.lexer = lex.lex(module=self, **kwargs)
 
 
