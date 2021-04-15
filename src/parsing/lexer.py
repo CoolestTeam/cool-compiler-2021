@@ -85,6 +85,28 @@ class MyLexer():
     t_ARROBA = r'\@'
     t_ARROW = r'\=\>'
 
+    # Regular expression rules with some action code
+    def t_INTEGER(self, tok):
+        tok.value = int(tok.value)
+        return tok
+
+    def t_ID(self, tok):
+        if self.get_reserved_keywds.__contains__(str.lower(tok.value)):
+            tok.value = str.lower(tok.value)
+            tok.type = self.get_reserved_keywds[str.lower(tok.value)]
+        else:
+            tok.type = "ID"
+        return tok
+
+    def t_TYPE(self, tok):
+        if self.get_reserved_keywds.__contains__(str.lower(tok.value)):
+            tok.value = str.lower(tok.value)
+            tok.type = self.get_reserved_keywds[str.lower(tok.value)]
+        else:
+            tok.type = "TYPE"
+        return tok
+    
+
     # Build the lexer
     def build(self, **kwargs):
         self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values())
