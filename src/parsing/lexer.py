@@ -64,6 +64,27 @@ class MyLexer():
             "IO": "IO_TYPE"
         }
 
+    # Regular expression rules for simple tokens
+    t_PLUS = r'\+'
+    t_MINUS = r'\-'
+    t_MULTIPLY = r'\*'
+    t_DIVIDE = r'\/'
+    t_EQUAL = r'\='
+    t_LESS = r'\<'
+    t_LESSEQ = r'\<\='
+    t_ASSIGN = r'\<\-'
+    t_NOX = r'~'
+    t_LPAREN = r'\('
+    t_RPAREN = r'\)'
+    t_LBRACE = r'\{'
+    t_RBRACE = r'\}'
+    t_COLON = r'\:'
+    t_SEMIC = r'\;'
+    t_COMMA = r'\,'
+    t_DOT = r'\.'
+    t_ARROBA = r'\@'
+    t_ARROW = r'\=\>'
+
     # Build the lexer
     def build(self, **kwargs):
         self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values())
