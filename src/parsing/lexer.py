@@ -34,8 +34,40 @@ class MyLexer():
             "ARROW"
         ]
 
+    def get_reserved_keywds(self):
+        return {
+            "class": "CLASS",
+            "case": "CASE",
+            "esac": "ESAC",
+            "let": "LET",
+            "in": "IN",
+            "inherits": "INHERITS",
+            "isvoid": "ISVOID",
+            "new": "NEW",
+            "if": "IF",
+            "else": "ELSE",
+            "then": "THEN",
+            "fi": "FI",
+            "while": "WHILE",
+            "loop": "LOOP",
+            "pool": "POOL",
+            "true": "TRUE",
+            "false": "FALSE",
+            "not": "NOT",
+            "of": "OF",
+            "Object": "OBJECT_TYPE",
+            "Int": "INT_TYPE",
+            "String": "STRING_TYPE",
+            "Bool": "BOOL_TYPE",
+            "SELF_TYPE": "SELF_TYPE",
+            "Main": "MAIN_TYPE",
+            "IO": "IO_TYPE"
+        }
+
     # Build the lexer
     def build(self, **kwargs):
+        self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values())
+        self.reserved = list(self.get_reserved_keywds.values())
         self.lexer = lex.lex(module=self, **kwargs)
 
 
