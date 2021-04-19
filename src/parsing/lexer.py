@@ -9,7 +9,7 @@ class MyLexer():
     # Build the lexer
     def build(self, **kwargs):
         self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values()) + list(self.get_builtin_types.values())
-        self.reserved = list(self.get_reserved_keywds.values()) + + list(self.get_builtin_types.values())
+        self.reserved = list(self.get_reserved_keywds.values()) + list(self.get_builtin_types.values())
         self.errors = []
         self.lexer = lex.lex(module=self, **kwargs)
 
@@ -134,13 +134,15 @@ class MyLexer():
     def t_STRING_newline(self, tok):
         tok.lexer.lineno += 1
         if not tok.lexer.backslashed:
-            # handler error todo
-            token.lexer.pop_state()
+            error = ErrorToken(f'Unterminated string constant', tok.lineno, self.find_col(tok.lexer.lexdata,tok.lexpos))
+            self.errors.append(error)
+            tok.lexer.pop_state()
+            return error
         else:
             tok.lexer.backslashed = False
 
     def t_start_string_state(self, tok):
-        tok.lexer.push_state('STRING')
+        tok.lexer.push_state("STRING")
         tok.lexer.backslashed = False
         tok.lexer.string = ""
 
@@ -155,8 +157,8 @@ class MyLexer():
             tok.lexer.backslashed = False
     
     def t_STRING_null(self, tok):
-        # handler error todo
-        pass
+        error = ErrorToken(f'String contains null character', tok.lineno, self.find_col(tok.lexer.lexdata,tok.lexpos))
+        self.errors.append(error)
 
     def t_STRING_anything(self, tok):
         if tok.lexer.backslashed:
@@ -179,7 +181,16 @@ class MyLexer():
             else:
                 tok.lexer.backslashed = True
 
-    # Error handling todo
+    def t_STRING_error(self, tok):
+        error = ErrorToken(f'{tok.value[0]} in string constant', tok.lineno, self.find_col(tok.lexer.lexdata,tok.lexpos))
+        self.errors.append(error)
+        return error
+    
+    def t_STRING_eof(self, tok):
+        error = ErrorToken(f'EOF in string constant', tok.lineno, self.find_col(tok.lexer.lexdata,tok.lexpos))
+        tok.lexer.pop_state()
+        self.errors.append(error)
+        return error
 
     # Comments Multiline State
     t_COMMENT_ignore = ''
@@ -199,12 +210,19 @@ class MyLexer():
 
     def t_COMMENT_another(self, tok):
         tok.lexer.comment_count += 1
+    
+    def t_COMMENT_error(self, tok):
+        tok.lexer.skip(1)
+    
+    def t_COMMENT_eof(self, tok):
+        error = ErrorToken(f'EOF in comment', tok.lineno, self.find_col(tok.lexer.lexdata,tok.lexpos))
+        tok.lexer.pop_state()
+        self.errors.append(error)
+        return error
 
     # Error handling
     def t_error(self, tok):
-        col = self.find_col(tok.lexer.lexdata,tok.lexpos)
-        msg = f'ERROR "{tok.value[0]}"'
-        error = ErrorToken(msg, tok.lineno, col)
+        error = ErrorToken(f'ERROR "{tok.value[0]}"', tok.lineno, self.find_col(tok.lexer.lexdata,tok.lexpos))
         tok.lexer.skip(1)
         self.errors.append(error)
         return error
@@ -212,8 +230,6 @@ class MyLexer():
     def find_col(input, lexpos):
         _start = input.rfind('\n', 0, lexpos) + 1
         return (lexpos - _start) + 1
-
-    
 
 if __name__ == "__main__":
     _file = sys.argv[1]
