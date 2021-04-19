@@ -117,6 +117,7 @@ class MyLexer():
 
     states = (
         ('STRING', 'exclusive')
+        ('COMMENT', 'exclusive'),
     )
 
     # String Matching State 
@@ -169,6 +170,27 @@ class MyLexer():
                 tok.lexer.string += tok.value
             else:
                 tok.lexer.backslashed = True
+
+    # Error handling todo
+
+    # Comments Multiline State
+    t_COMMENT_ignore = ''
+
+    def t_COMMENT_newline(self, tok):
+        tok.lexer.lineno += len(tok.value)
+    
+    def t_start_comment_state(self, tok):
+        tok.lexer.push_state("COMMENT")
+        tok.lexer.comment_count = 0
+    
+    def t_COMMENT_end(self, tok):
+        if tok.lexer.comment_count == 0:
+            tok.lexer.pop_state()
+        else:
+            tok.lexer.comment_count -= 1
+
+    def t_COMMENT_another(self, tok):
+        tok.lexer.comment_count += 1
 
     # Error handling todo
 
