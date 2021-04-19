@@ -115,6 +115,63 @@ class MyLexer():
     def t_newline(self, tok):
         tok.lexer.lineno += len(tok.value)
 
+    states = (
+        ('STRING', 'exclusive')
+    )
+
+    # String Matching State 
+    t_STRING_ignore = ''
+
+    def t_STRING_newline(self, tok):
+        tok.lexer.lineno += 1
+        if not tok.lexer.backslashed:
+            # handler error todo
+            token.lexer.pop_state()
+        else:
+            tok.lexer.backslashed = False
+
+    def t_start_string_state(self, tok):
+        tok.lexer.push_state('STRING')
+        tok.lexer.backslashed = False
+        tok.lexer.string = ""
+
+    def t_STRING_end(self, tok):
+        if not tok.lexer.backslashed:
+            tok.lexer.pop_state()
+            tok.value = tok.lexer.string
+            tok.type = "STRING"
+            return tok
+        else:
+            tok.lexer.string += '"'
+            tok.lexer.backslashed = False
+    
+    def t_STRING_null(self, tok):
+        # handler error todo
+        pass
+
+    def t_STRING_anything(self, tok):
+        if tok.lexer.backslashed:
+            if tok.value == 'b':
+                tok.lexer.string += '\b'
+            elif tok.value == 'n':
+                tok.lexer.string += '\n'
+            elif tok.value == 'f':
+                tok.lexer.string += '\f'
+            elif tok.value == 't':
+                tok.lexer.string += '\t'
+            elif tok.value == '\\':
+                tok.lexer.string += '\\'
+            else:
+                tok.lexer.string += tok.value
+            tok.lexer.backslashed = False
+        else:
+            if tok.value != '\\':
+                tok.lexer.string += tok.value
+            else:
+                tok.lexer.backslashed = True
+
+    # Error handling todo
+
     # Build the lexer
     def build(self, **kwargs):
         self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values()) + list(self.get_builtin_types.values())
