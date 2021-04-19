@@ -88,6 +88,8 @@ class MyLexer():
     t_DOT = r'\.'
     t_ARROBA = r'\@'
     t_ARROW = r'\=\>'
+    t_ignore = ' \t\r\f'
+    t_ignore_LINE_COMMENT = r"\-\-[^\n]*"
 
     # Regular expression rules with some action code
     def t_INTEGER(self, tok):
@@ -110,6 +112,8 @@ class MyLexer():
             tok.type = "TYPE"
         return tok
     
+    def t_newline(self, tok):
+        tok.lexer.lineno += len(tok.value)
 
     # Build the lexer
     def build(self, **kwargs):
