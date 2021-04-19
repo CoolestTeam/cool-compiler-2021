@@ -1,9 +1,17 @@
 import ply.lex as lex
 import sys
+from error_token import ErrorToken
 
 class MyLexer():
     def __init__(self):
         self.build()
+    
+    # Build the lexer
+    def build(self, **kwargs):
+        self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values()) + list(self.get_builtin_types.values())
+        self.reserved = list(self.get_reserved_keywds.values()) + + list(self.get_builtin_types.values())
+        self.errors = []
+        self.lexer = lex.lex(module=self, **kwargs)
 
     # The tokens list
     def get_basic_tok(self):
@@ -192,15 +200,20 @@ class MyLexer():
     def t_COMMENT_another(self, tok):
         tok.lexer.comment_count += 1
 
-    # Error handling todo
+    # Error handling
+    def t_error(self, tok):
+        col = self.find_col(tok.lexer.lexdata,tok.lexpos)
+        msg = f'ERROR "{tok.value[0]}"'
+        error = ErrorToken(msg, tok.lineno, col)
+        tok.lexer.skip(1)
+        self.errors.append(error)
+        return error
+    
+    def find_col(input, lexpos):
+        _start = input.rfind('\n', 0, lexpos) + 1
+        return (lexpos - _start) + 1
 
-    # Build the lexer
-    def build(self, **kwargs):
-        self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values()) + list(self.get_builtin_types.values())
-        self.reserved = list(self.get_reserved_keywds.values()) + + list(self.get_builtin_types.values())
-        self.lexer = lex.lex(module=self, **kwargs)
-
-
+    
 
 if __name__ == "__main__":
     _file = sys.argv[1]
@@ -211,3 +224,6 @@ if __name__ == "__main__":
 
     for tok in _mylexer:
         pass
+
+    if _mylexer.errors:
+        print(_mylexer.errors[0])
