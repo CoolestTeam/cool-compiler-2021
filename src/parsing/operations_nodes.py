@@ -21,47 +21,63 @@ class LogicBinOpNode(BinaryOpNode):
         pass
 
 class NotNode(UnaryOpNode):
-    def __init__(self, expression):
+    def __init__(self, expression, row, col):
         super(NotNode, self).__init__()
         self.expression = expression
+        self.row = row
+        self.col = col
 
 class LogicNotNode(UnaryOpNode):
-    def __init__(self, expression):
+    def __init__(self, expression, row, col):
         super(LogicNotNode, self).__init__()
         self.expression = expression
+        self.row = row
+        self.col = col
 
 class SumNode(ArithBinOpNode):
-    def __init__(self, left, right):
+    def __init__(self, left, right, row, col):
         super(SumNode, self).__init__()
         self.left = left
         self.right = right
+        self.row = row
+        self.col = col
 
 class SubNode(ArithBinOpNode):
-    def __init__(self, left, right):
+    def __init__(self, left, right, row, col):
         super(SubNode, self).__init__()
         self.left = left
         self.right = right
+        self.row = row
+        self.col = col
 
 class MultNode(ArithBinOpNode):
-    def __init__(self, left, right):
+    def __init__(self, left, right, row, col):
         super(MultNode, self).__init__()
         self.left = left
         self.right = right
+        self.row = row
+        self.col = col
 
 class DivNode(ArithBinOpNode):
-    def __init__(self, left, right):
+    def __init__(self, left, right, row, col):
         super(DivNode, self).__init__()
         self.left = left
         self.right = right
+        self.row = row
+        self.col = col
 
 class LessNode(LogicBinOpNode):
-    def __init__(self, left, right):
+    def __init__(self, left, right, row, col):
         super(LessThanNode, self).__init__()
         self.left = left
         self.right = right
+        self.row = row
+        self.col = col
 
 class LessEqualNode(LogicBinOpNode):
-    def __init__(self, left, right):
+    def __init__(self, left, right, row, col):
         super(LessOrEqualThanNode, self).__init__()
         self.left = left
         self.right = right
+        self.row = row
+        self.col = col
