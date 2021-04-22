@@ -101,10 +101,12 @@ class MyLexer():
 
     # Regular expression rules with some action code
     def t_INTEGER(self, tok):
+        r"\d+"
         tok.value = int(tok.value)
         return tok
 
     def t_ID(self, tok):
+        r"[a-z][a-zA-Z_0-9]*"
         if self.get_reserved_keywds.__contains__(str.lower(tok.value)):
             tok.value = str.lower(tok.value)
             tok.type = self.get_reserved_keywds[str.lower(tok.value)]
@@ -113,6 +115,7 @@ class MyLexer():
         return tok
 
     def t_TYPE(self, tok):
+        r"[A-Z][a-zA-Z_0-9]*"
         if self.get_reserved_keywds.__contains__(str.lower(tok.value)):
             tok.value = str.lower(tok.value)
             tok.type = self.get_reserved_keywds[str.lower(tok.value)]
@@ -121,6 +124,7 @@ class MyLexer():
         return tok
     
     def t_newline(self, tok):
+        r"\n+"
         tok.lexer.lineno += len(tok.value)
 
     states = (
@@ -132,6 +136,7 @@ class MyLexer():
     t_STRING_ignore = ''
 
     def t_STRING_newline(self, tok):
+        r"\n"
         tok.lexer.lineno += 1
         if not tok.lexer.backslashed:
             error = ErrorToken(f'Unterminated string constant', tok.lineno, self.find_col(tok.lexer.lexdata,tok.lexpos))
@@ -142,11 +147,13 @@ class MyLexer():
             tok.lexer.backslashed = False
 
     def t_start_string_state(self, tok):
+        r"\""
         tok.lexer.push_state("STRING")
         tok.lexer.backslashed = False
         tok.lexer.string = ""
 
     def t_STRING_end(self, tok):
+        r"\""
         if not tok.lexer.backslashed:
             tok.lexer.pop_state()
             tok.value = tok.lexer.string
@@ -157,10 +164,12 @@ class MyLexer():
             tok.lexer.backslashed = False
     
     def t_STRING_null(self, tok):
+        r"\0"
         error = ErrorToken(f'String contains null character', tok.lineno, self.find_col(tok.lexer.lexdata,tok.lexpos))
         self.errors.append(error)
 
     def t_STRING_anything(self, tok):
+        r"[^\n]"
         if tok.lexer.backslashed:
             if tok.value == 'b':
                 tok.lexer.string += '\b'
@@ -196,19 +205,23 @@ class MyLexer():
     t_COMMENT_ignore = ''
 
     def t_COMMENT_newline(self, tok):
+        r"\n+"
         tok.lexer.lineno += len(tok.value)
     
     def t_start_comment_state(self, tok):
+        r'\(\*'
         tok.lexer.push_state("COMMENT")
         tok.lexer.comment_count = 0
     
     def t_COMMENT_end(self, tok):
+        r'\*\)'
         if tok.lexer.comment_count == 0:
             tok.lexer.pop_state()
         else:
             tok.lexer.comment_count -= 1
 
     def t_COMMENT_another(self, tok):
+        r'\(\*'
         tok.lexer.comment_count += 1
     
     def t_COMMENT_error(self, tok):
