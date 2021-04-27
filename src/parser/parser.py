@@ -13,10 +13,21 @@ class MyParser():
         self.tokens = self.lexer.tokens
         self.errors = []
         self.parser = yacc.yacc(module=self)
-        
 
     def parse(self, _cool_program):
         return self.parser.parse(_cool_program)
+    
+    precedence = (
+        ('right', 'ASSIGN'),
+        ('right', 'NOT')
+        ('nonassoc', 'LESS', 'LESSEQ', 'EQUAL'),
+        ('left', 'PLUS', 'MINUS'),
+        ('left', 'MULTIPLY', 'DIVIDE'),
+        ('right', 'ISVOID'),
+        ('right', 'NOX'),
+        ('right', 'ARROBA'),
+        ('right', 'DOT')
+    )
 
 
 if __name__ == "__main__":
