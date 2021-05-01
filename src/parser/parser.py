@@ -76,6 +76,24 @@ class MyParser():
         p[0] = ActionNode(
             name=p[1], act_type=p[3], body=p[5], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
 
+    def p_let_var(self, p):
+        p[0] = (p[1],) if len(p) == 2 else p[1] + (p[3],)
+    
+    def p_let_init(self, p):
+        p[0] = (p[1],) if len(p) == 2 else LetInitNode(
+            name=p[1], let_type=p[3], expression=p[5], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))            
+
+    def p_let_def(self, p):
+        p[0] = p[1] if len(p) == 2 else LetDefNode(
+            name=p[1], let_type=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
+    def p_formal_param_list(self, p):
+        p[0] = (p[1],) if len(p) == 2 else p[1] + (p[3],)
+    
+    def p_formal_param(self, p):
+        p[0] = FormalParamNode(
+            name=p[1], param_type=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+    
 
 if __name__ == "__main__":
     _file = sys.argv[1]
