@@ -124,6 +124,21 @@ class MyParser():
         p[0] = WhileNode(
             predicate=p[2], expression=p[4], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
 
+    def p_block_list(self, p):
+        p[0] = (p[1],) if len(p) == 3 else p[1] + (p[2],)
+    
+    def p_expr_block(self, p):
+        p[0] = BlockNode(
+            expr_list=p[2], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
+    def p_expr_let(self, p):
+        p[0] = LetNode(
+            init_list=p[2], body=p[4], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+
+    def p_expr_case(self, p):
+        p[0] = CaseNode(
+            expression=p[2], act_list=p[4], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
 
 if __name__ == "__main__":
     _file = sys.argv[1]
