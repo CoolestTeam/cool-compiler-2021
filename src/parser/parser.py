@@ -139,6 +139,18 @@ class MyParser():
         p[0] = CaseNode(
             expression=p[2], act_list=p[4], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
 
+    def p_expr_new(self, p):
+        p[0] = NewNode(
+            new_type=p[2], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+
+    def p_expr_isvoid(self, p):
+        p[0] = IsVoidNode(
+            expression=p[2], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+
+    def p_expr_id(self, p):
+        p[0] = IdNode(
+            name=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
 
 if __name__ == "__main__":
     _file = sys.argv[1]
