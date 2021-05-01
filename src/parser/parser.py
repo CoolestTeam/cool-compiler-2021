@@ -94,7 +94,25 @@ class MyParser():
         p[0] = FormalParamNode(
             name=p[1], param_type=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
     
+    def p_args_list(self, p):
+        p[0] = (p[1],) if len(p) == 2 else p[1] + (p[3],)
+    
+    def p_args_list_opt(self, p):
+        p[0] = tuple() if p.slice[1].type == 'empty' else p[1]
+    
+    def p_expr_dynamic_call(self, p):
+        p[0] = DynamicCallNode(
+            obj=p[1], method=p[3], args=p[5], row=p.lineno(3), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(3)))
+    
+    def p_expr_static_call(self, p):
+        p[0] = StaticCallNode(
+            obj=p[1], static_type=p[3], method=p[5], args=p[7], row=p.lineno(5), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(5)))
 
+    def p_expr_self_call(self, p):
+        p[0] = DynamicCallNode(
+            obj=IdNode('self', row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1))), method=p[1], args=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+    
+    
 if __name__ == "__main__":
     _file = sys.argv[1]
     _cool_program = open(_file, encoding="utf-8").read()
