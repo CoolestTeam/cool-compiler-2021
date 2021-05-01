@@ -112,7 +112,19 @@ class MyParser():
         p[0] = DynamicCallNode(
             obj=IdNode('self', row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1))), method=p[1], args=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
     
-    
+    def p_expr_assign(self, p):
+        p[0] = AssignNode(
+            name=p[1], expression=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
+    def p_expr_if(self, p):
+        p[0] = IfNode(
+            predicate=p[2], then_expr=p[4], else_expr=p[6], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
+    def p_expr_while(self, p):
+        p[0] = WhileNode(
+            predicate=p[2], expression=p[4], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
+
 if __name__ == "__main__":
     _file = sys.argv[1]
     _cool_program = open(_file, encoding="utf-8").read()
