@@ -162,6 +162,37 @@ class MyParser():
     def p_expr_bool(self, p):
         p[0] = BooleanNode(
             value=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+    
+    def p_expr_binary_op(self, p):
+        if p[2] == '+':
+            p[0] = SumNode(
+                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+        elif p[2] == '-':
+            p[0] = SubNode(
+                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+        elif p[2] == '*':
+            p[0] = MultNode(
+                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+        elif p[2] == '/':
+            p[0] = DivNode(
+                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+        elif p[2] == '<':
+            p[0] = LessNode(
+                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+        elif p[2] == '<=':
+            p[0] = LessEqualNode(
+                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+        elif p[2] == '=':
+            p[0] = EqualsNode(
+                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+    
+    def p_expr_unary_op(self, p):
+        if p[1] == '~':
+            p[0] = LogicNotNode(
+                expression=p[2], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+        elif p[1].lower() == 'not':
+            p[0] = NotNode(
+                expression=p[2], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
 
 if __name__ == "__main__":
     _file = sys.argv[1]
