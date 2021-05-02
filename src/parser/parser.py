@@ -1,6 +1,7 @@
 import ply.yacc as yacc
 from nodes import *
 from lexer import MyLexer
+from syntactic_error import SyntaxError
 import sys
 
 class MyParser():
@@ -199,6 +200,15 @@ class MyParser():
 
     def p_empty(self, p):
         p[0] = None
+    
+    def p_error(self, p):
+        if p:
+            self.errors.append(SyntaxError(f'"ERROR at or near {p.value}"', p.lineno, MyLexer.find_col(p.lexer.lexdata, p.lexpos))
+            self.parser.errok()
+        else:
+            self.errors.append(SyntaxError('"ERROR at or near EOF"',0,0))
+            return
+        
 
 if __name__ == "__main__":
     _file = sys.argv[1]
