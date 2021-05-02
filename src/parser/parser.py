@@ -151,6 +151,17 @@ class MyParser():
         p[0] = IdNode(
             name=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
 
+    def p_expr_int(self, p):
+        p[0] = IntegerNode(
+            value=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
+    def p_expr_str(self, p):
+        p[0] = StringNode(
+            value=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+
+    def p_expr_bool(self, p):
+        p[0] = BooleanNode(
+            value=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
 
 if __name__ == "__main__":
     _file = sys.argv[1]
