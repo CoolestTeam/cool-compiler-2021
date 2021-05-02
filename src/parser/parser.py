@@ -194,6 +194,12 @@ class MyParser():
             p[0] = NotNode(
                 expression=p[2], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
 
+    def p_expr_parenthesis(self, p):
+        p[0] = p[2]
+
+    def p_empty(self, p):
+        p[0] = None
+
 if __name__ == "__main__":
     _file = sys.argv[1]
     _cool_program = open(_file, encoding="utf-8").read()
