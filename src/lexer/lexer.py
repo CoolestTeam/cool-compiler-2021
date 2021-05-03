@@ -244,15 +244,27 @@ class MyLexer():
         _start = input.rfind('\n', 0, lexpos) + 1
         return (lexpos - _start) + 1
 
+    def token(self):
+        return self.lexer.token()
+    
+    def tokenize(self, _cool_program):
+        self.lexer.input(_cool_program)
+        _tokens = []
+        while True:
+            _tok = _mylexer.token()
+            if not _tok:
+                raise Exception()
+            _tokens.append(_tok)
+        return(_tokens)
+
 if __name__ == "__main__":
     _file = sys.argv[1]
     _cool_program = open(_file, encoding="utf-8").read()
 
     _mylexer = MyLexer()
-    _mylexer.lexer.input(_cool_program)
-
-    for tok in _mylexer:
-        pass
+    result = _mylexer.tokenize(_cool_program)
+    print(result)
 
     if _mylexer.errors:
         print(_mylexer.errors[0])
+    
