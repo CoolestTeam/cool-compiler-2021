@@ -26,3 +26,6 @@ if __name__ == "__main__":
         if _myparser.errors:
             print(_myparser.errors[0])
             exit(1)
+
+        # SemanticTODO
+        # CodeGenTODO
