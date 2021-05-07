@@ -1,4 +1,4 @@
-from ast_nodes import AST
+from .ast_nodes import AST
 
 class ExpressionNode(AST):
     def __init__(self):

@@ -1,4 +1,4 @@
-from expr_nodes import ExpressionNode
+from .expr_nodes import ExpressionNode
 
 class BinaryOpNode(ExpressionNode):
     def __init__(self):
