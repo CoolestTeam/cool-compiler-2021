@@ -5,16 +5,25 @@ from .syntactic_error import SyntaxError
 import sys
 
 class MyParser():
-    def __init__(self):
-
-        self.build()
+    def __init__(self, build_parser=True, debug=False, write_tables=True, optimize=True, outputdir="", yacctab="pycoolc.yacctab", debuglog=None, errorlog=None, tracking =True):
+        
+        self.build(debug=debug, write_tables=write_tables, optimize=optimize, outputdir=outputdir,
+                    yacctab=yacctab, debuglog=debuglog, errorlog=errorlog)
 
     def build(self, **kwargs):
+
+        debug = kwargs.get("debug")
+        write_tables = kwargs.get("write_tables")
+        optimize = kwargs.get("optimize")
+        outputdir = kwargs.get("outputdir")
+        yacctab = kwargs.get("yacctab")
+        debuglog = kwargs.get("debuglog")
 
         self.lexer = MyLexer()
         self.tokens = self.lexer.tokens
         self.errors = []
-        self.parser = yacc.yacc(module=self)
+        self.parser = yacc.yacc(module=self, write_tables=write_tables, debug=debug, optimize=optimize,
+                                outputdir=outputdir, tabmodule=yacctab, debuglog=debuglog, errorlog=yacc.NullLogger())
 
     def parse(self, _cool_program):
         return self.parser.parse(_cool_program)
