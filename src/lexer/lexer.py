@@ -259,14 +259,4 @@ class MyLexer():
             _tokens.append(_tok)
         return(_tokens)
 
-if __name__ == "__main__":
-    _file = sys.argv[1]
-    _cool_program = open(_file, encoding="utf-8").read()
-
-    _mylexer = MyLexer()
-    _mylexer_result = _mylexer.tokenize(_cool_program)
-    print(result)
-
-    if _mylexer.errors:
-        print(_mylexer.errors[0])
     

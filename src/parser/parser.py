@@ -10,6 +10,7 @@ class MyParser():
         self.build(debug=debug, write_tables=write_tables, optimize=optimize, outputdir=outputdir,
                     yacctab=yacctab, debuglog=debuglog, errorlog=errorlog)
 
+    # Build the parser
     def build(self, **kwargs):
 
         debug = kwargs.get("debug")
@@ -32,6 +33,7 @@ class MyParser():
         _start = input.rfind('\n', 0, lexpos) + 1
         return (lexpos - _start) + 1
     
+    # Precedence rules
     precedence = (
         ('right', 'ASSIGN'),
         ('right', 'NOT'),
@@ -44,6 +46,7 @@ class MyParser():
         ('right', 'DOT')
     )
 
+    # Grammar rules declarations
     def p_program(self, p):
         '''
         program : class_list
@@ -359,6 +362,7 @@ class MyParser():
         '''
         p[0] = None
 
+    # Error rule for Syntax Errors handling
     def p_error(self, p):
         if p:
             self.errors.append(SyntaxError(f'"ERROR at or near {p.value}"', p.lineno, self.find_col(p.lexer.lexdata, p.lexpos)))
