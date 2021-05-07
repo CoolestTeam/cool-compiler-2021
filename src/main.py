@@ -22,6 +22,7 @@ if __name__ == "__main__":
             _myparse_result = _myparser.parse(_cool_program)
         except:
             pass
+        # _myparse_result = _myparser.parse(_cool_program)
 
         if _myparser.errors:
             print(_myparser.errors[0])

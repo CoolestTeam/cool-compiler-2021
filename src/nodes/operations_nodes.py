@@ -68,7 +68,7 @@ class DivNode(ArithBinOpNode):
 
 class LessNode(LogicBinOpNode):
     def __init__(self, left, right, row, col):
-        super(LessThanNode, self).__init__()
+        super(LessNode, self).__init__()
         self.left = left
         self.right = right
         self.row = row
@@ -76,7 +76,7 @@ class LessNode(LogicBinOpNode):
 
 class LessEqualNode(LogicBinOpNode):
     def __init__(self, left, right, row, col):
-        super(LessOrEqualThanNode, self).__init__()
+        super(LessEqualNode, self).__init__()
         self.left = left
         self.right = right
         self.row = row
