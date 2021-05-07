@@ -1,15 +1,16 @@
 import ply.lex as lex
 import sys
-from error_token import ErrorToken
+from .error_token import ErrorToken
 
 class MyLexer():
-    def __init__(self):
-        self.build()
+    def __init__(self, debug=False, lextab="lextab", optimize="False", outputdir="", debuglog=None, errorlog=None):
+        self.build(
+            debug=debug, lextab=lextab, optimize=optimize, outputdir=outputdir, debuglog=debuglog, errorlog=errorlog)
     
     # Build the lexer
     def build(self, **kwargs):
-        self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds.values()) + list(self.get_builtin_types.values())
-        self.reserved = list(self.get_reserved_keywds.values()) + list(self.get_builtin_types.values())
+        self.tokens = self.get_basic_tok() + list(self.get_reserved_keywds().values()) + list(self.get_builtin_types().values())
+        self.reserved = list(self.get_reserved_keywds().values()) + list(self.get_builtin_types().values())
         self.errors = []
         self.lexer = lex.lex(module=self, **kwargs)
 
@@ -39,7 +40,8 @@ class MyLexer():
             "COMMA",
             "DOT",
             "ARROBA",
-            "ARROW"
+            "ARROW",
+            "LexicographicError"
         ]
 
     def get_reserved_keywds(self):
@@ -107,18 +109,18 @@ class MyLexer():
 
     def t_ID(self, tok):
         r"[a-z][a-zA-Z_0-9]*"
-        if self.get_reserved_keywds.__contains__(str.lower(tok.value)):
+        if self.get_reserved_keywds().__contains__(str.lower(tok.value)):
             tok.value = str.lower(tok.value)
-            tok.type = self.get_reserved_keywds[str.lower(tok.value)]
+            tok.type = self.get_reserved_keywds()[str.lower(tok.value)]
         else:
             tok.type = "ID"
         return tok
 
     def t_TYPE(self, tok):
         r"[A-Z][a-zA-Z_0-9]*"
-        if self.get_reserved_keywds.__contains__(str.lower(tok.value)):
+        if self.get_reserved_keywds().__contains__(str.lower(tok.value)):
             tok.value = str.lower(tok.value)
-            tok.type = self.get_reserved_keywds[str.lower(tok.value)]
+            tok.type = self.get_reserved_keywds()[str.lower(tok.value)]
         else:
             tok.type = "TYPE"
         return tok
@@ -128,8 +130,8 @@ class MyLexer():
         tok.lexer.lineno += len(tok.value)
 
     states = (
-        ('STRING', 'exclusive')
-        ('COMMENT', 'exclusive'),
+        ('STRING', 'exclusive'),
+        ('COMMENT', 'exclusive')
     )
 
     # String Matching State 
@@ -240,7 +242,7 @@ class MyLexer():
         self.errors.append(error)
         return error
     
-    def find_col(input, lexpos):
+    def find_col(self, input, lexpos):
         _start = input.rfind('\n', 0, lexpos) + 1
         return (lexpos - _start) + 1
 
@@ -251,7 +253,7 @@ class MyLexer():
         self.lexer.input(_cool_program)
         _tokens = []
         while True:
-            _tok = _mylexer.token()
+            _tok = self.token()
             if not _tok:
                 raise Exception()
             _tokens.append(_tok)
@@ -262,7 +264,7 @@ if __name__ == "__main__":
     _cool_program = open(_file, encoding="utf-8").read()
 
     _mylexer = MyLexer()
-    result = _mylexer.tokenize(_cool_program)
+    _mylexer_result = _mylexer.tokenize(_cool_program)
     print(result)
 
     if _mylexer.errors:
