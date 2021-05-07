@@ -8,4 +8,4 @@ echo "Cool Compiler version 1.0"        # TODO: Recuerde cambiar estas
 echo "Copyright (c) 2021: Laura Brito Guerrero, Sheyla Cruz Castro, Ariel Huerta Martin"    # TODO: líneas a los valores correctos
 
 # Llamar al compilador
-python main.py $INPUT_FILE
+python3 main.py $INPUT_FILE
