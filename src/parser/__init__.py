@@ -1,2 +1,2 @@
 from .syntactic_error import SyntaxError
-from .parser import MyParser
+from .parser import *
