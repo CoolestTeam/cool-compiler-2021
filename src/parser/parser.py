@@ -27,7 +27,11 @@ class MyParser():
 
     def parse(self, _cool_program):
         return self.parser.parse(_cool_program)
- 
+    
+    def find_col(self, input, lexpos):
+        _start = input.rfind('\n', 0, lexpos) + 1
+        return (lexpos - _start) + 1
+    
     precedence = (
         ('right', 'ASSIGN'),
         ('right', 'NOT'),
@@ -58,14 +62,14 @@ class MyParser():
         class : CLASS TYPE LBRACE feature_opt RBRACE
         '''
         p[0] = ClassNode(
-            name=p[2], parent='Object', features=p[4], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+            name=p[2], parent='Object', features=p[4], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
        
     def p_def_class_inherits(self, p):
         '''
         class : CLASS TYPE INHERITS TYPE LBRACE feature_opt RBRACE
         '''
         p[0] = ClassNode(
-            name=p[2], parent=p[4], features=p[6], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(4)))
+            name=p[2], parent=p[4], features=p[6], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(4)))
 
     def p_feature_list(self, p):
         '''
@@ -86,14 +90,14 @@ class MyParser():
         feature : ID LPAREN formal_param_list RPAREN COLON TYPE LBRACE expr RBRACE
         '''
         p[0] = ClassMethodNode(
-            name=p[1], params=p[3], expression=p[8], return_type=p[6], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], params=p[3], expression=p[8], return_type=p[6], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_feature_class_method(self, p):
         '''
         feature : ID LPAREN RPAREN COLON TYPE LBRACE expr RBRACE
         '''
         p[0] = ClassMethodNode(
-            name=p[1], params=tuple(), expression=p[7], return_type=p[5], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], params=tuple(), expression=p[7], return_type=p[5], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_feature_attr(self, p):
         '''
@@ -107,14 +111,14 @@ class MyParser():
                   | attr_def
         '''
         p[0] = p[1] if len(p) == 2 else AttrInitNode(
-            name=p[1], attr_type=p[3], expression=p[5], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], attr_type=p[3], expression=p[5], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_attr_def(self, p):
         '''
         attr_def : ID COLON TYPE
         '''
         p[0] = AttrDefNode(
-            name=p[1], attr_type=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], attr_type=p[3], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_action_list(self, p):
         '''
@@ -128,7 +132,7 @@ class MyParser():
         action : ID COLON TYPE ARROW expr SEMIC
         '''
         p[0] = ActionNode(
-            name=p[1], act_type=p[3], body=p[5], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], act_type=p[3], body=p[5], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_let_var(self, p):
         '''
@@ -143,14 +147,14 @@ class MyParser():
                  | let_def
         '''
         p[0] = p[1] if len(p) == 2 else LetInitNode(
-            name=p[1], let_type=p[3], expression=p[5], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))            
+            name=p[1], let_type=p[3], expression=p[5], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))            
 
     def p_let_def(self, p):
         '''
         let_def : ID COLON TYPE
         '''
         p[0] = LetDefNode(
-            name=p[1], let_type=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], let_type=p[3], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_formal_param_list(self, p):
         '''
@@ -164,7 +168,7 @@ class MyParser():
         formal_param : ID COLON TYPE
         '''
         p[0] = FormalParamNode(
-            name=p[1], param_type=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], param_type=p[3], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_args_list(self, p):
         '''
@@ -185,42 +189,42 @@ class MyParser():
         expr : expr DOT ID LPAREN args_list_opt RPAREN
         '''
         p[0] = DynamicCallNode(
-            obj=p[1], method=p[3], args=p[5], row=p.lineno(3), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(3)))
+            obj=p[1], method=p[3], args=p[5], row=p.lineno(3), col=self.find_col(p.lexer.lexdata, p.lexpos(3)))
 
     def p_expr_static_call(self, p):
         '''
         expr : expr ARROBA TYPE DOT ID LPAREN args_list_opt RPAREN
         '''
         p[0] = StaticCallNode(
-            obj=p[1], static_type=p[3], method=p[5], args=p[7], row=p.lineno(5), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(5)))
+            obj=p[1], static_type=p[3], method=p[5], args=p[7], row=p.lineno(5), col=self.find_col(p.lexer.lexdata, p.lexpos(5)))
 
     def p_expr_self_call(self, p):
         '''
         expr : ID LPAREN args_list_opt RPAREN
         '''
         p[0] = DynamicCallNode(
-            obj=IdNode('self', row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1))), method=p[1], args=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            obj=IdNode('self', row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1))), method=p[1], args=p[3], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_assign(self, p):
         '''
         expr : ID ASSIGN expr
         '''
         p[0] = AssignNode(
-            name=p[1], expression=p[3], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], expression=p[3], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_if(self, p):
         '''
         expr : IF expr THEN expr ELSE expr FI
         '''
         p[0] = IfNode(
-            predicate=p[2], then_expr=p[4], else_expr=p[6], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            predicate=p[2], then_expr=p[4], else_expr=p[6], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_while(self, p):
         '''
         expr : WHILE expr LOOP expr POOL
         '''
         p[0] = WhileNode(
-            predicate=p[2], expression=p[4], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            predicate=p[2], expression=p[4], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_block_list(self, p):
         '''
@@ -234,7 +238,7 @@ class MyParser():
         expr : LBRACE block_list RBRACE
         '''
         p[0] = BlockNode(
-            expr_list=p[2], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            expr_list=p[2], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_simple_let(self, p):
         '''
@@ -247,49 +251,49 @@ class MyParser():
         let_expr : LET let_var IN expr
         '''
         p[0] = LetNode(
-            init_list=p[2], body=p[4], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+            init_list=p[2], body=p[4], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
 
     def p_expr_case(self, p):
         '''
         expr : CASE expr OF action_list ESAC
         '''
         p[0] = CaseNode(
-            expression=p[2], act_list=p[4], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            expression=p[2], act_list=p[4], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_new(self, p):
         '''
         expr : NEW TYPE
         '''
         p[0] = NewNode(
-            new_type=p[2], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+            new_type=p[2], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
 
     def p_expr_isvoid(self, p):
         '''
         expr : ISVOID expr
         '''
         p[0] = IsVoidNode(
-            expression=p[2], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+            expression=p[2], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
 
     def p_expr_id(self, p):
         '''
         expr : ID
         '''
         p[0] = IdNode(
-            name=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            name=p[1], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_int(self, p):
         '''
         expr : INTEGER
         '''
         p[0] = IntegerNode(
-            value=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            value=p[1], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_str(self, p):
         '''
         expr : STRING
         '''
         p[0] = StringNode(
-            value=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            value=p[1], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_bool(self, p):
         '''
@@ -297,7 +301,7 @@ class MyParser():
              | FALSE
         '''
         p[0] = BooleanNode(
-            value=p[1], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+            value=p[1], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_binary_op(self, p):
         '''
@@ -311,25 +315,25 @@ class MyParser():
         '''
         if p[2] == '+':
             p[0] = SumNode(
-                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+                left=p[1], right=p[3], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
         elif p[2] == '-':
             p[0] = SubNode(
-                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+                left=p[1], right=p[3], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
         elif p[2] == '*':
             p[0] = MultNode(
-                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+                left=p[1], right=p[3], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
         elif p[2] == '/':
             p[0] = DivNode(
-                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+                left=p[1], right=p[3], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
         elif p[2] == '<':
             p[0] = LessNode(
-                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+                left=p[1], right=p[3], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
         elif p[2] == '<=':
             p[0] = LessEqualNode(
-                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+                left=p[1], right=p[3], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
         elif p[2] == '=':
             p[0] = EqualsNode(
-                left=p[1], right=p[3], row=p.lineno(2), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(2)))
+                left=p[1], right=p[3], row=p.lineno(2), col=self.find_col(p.lexer.lexdata, p.lexpos(2)))
 
     def p_expr_unary_op(self, p):
         '''
@@ -338,10 +342,10 @@ class MyParser():
         '''
         if p[1] == '~':
             p[0] = LogicNotNode(
-                expression=p[2], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+                expression=p[2], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
         elif p[1].lower() == 'not':
             p[0] = NotNode(
-                expression=p[2], row=p.lineno(1), col=MyLexer.find_col(p.lexer.lexdata, p.lexpos(1)))
+                expression=p[2], row=p.lineno(1), col=self.find_col(p.lexer.lexdata, p.lexpos(1)))
 
     def p_expr_parenthesis(self, p):
         '''
@@ -357,7 +361,7 @@ class MyParser():
 
     def p_error(self, p):
         if p:
-            self.errors.append(SyntaxError(f'"ERROR at or near {p.value}"', p.lineno, MyLexer.find_col(p.lexer.lexdata, p.lexpos)))
+            self.errors.append(SyntaxError(f'"ERROR at or near {p.value}"', p.lineno, self.find_col(p.lexer.lexdata, p.lexpos)))
             self.parser.errok()
         else:
             self.errors.append(SyntaxError('"ERROR at or near EOF"',0,0))

@@ -2,7 +2,7 @@ class SyntaxError():
     def __init__(self, msg, line, column):
         super().__init__()
         self.type = 'SyntacticError'
-        self.value = mgs
+        self.value = msg
         self.line = line
         self.column = column
 
