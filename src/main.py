@@ -1,5 +1,6 @@
 from lexer import MyLexer
 from parser import MyParser
+from semantic import MySemanticAnalyzer
 import sys
 
 if __name__ == "__main__":
@@ -19,7 +20,8 @@ if __name__ == "__main__":
             print(_mylexer.errors[0])
             exit(1)
         try:
-            _myparse_result = _myparser.parse(_cool_program)
+            #_myparse_result = _myparser.parse(_cool_program)
+            myAst = _myparser.parse(_cool_program)
         except:
             pass
 
@@ -28,4 +30,12 @@ if __name__ == "__main__":
             exit(1)
 
         # SemanticTODO
+        _mySemantic = MySemanticAnalyzer(myAst)
+        context, scope = _mySemantic.analize()
+        
+        if _mySemantic.errors:
+            print(_mySemantic.errors[0])
+            exit(1)
+
+
         # CodeGenTODO
