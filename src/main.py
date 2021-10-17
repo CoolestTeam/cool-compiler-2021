@@ -20,7 +20,6 @@ if __name__ == "__main__":
             print(_mylexer.errors[0])
             exit(1)
         try:
-            #_myparse_result = _myparser.parse(_cool_program)
             myAst = _myparser.parse(_cool_program)
         except:
             pass
@@ -30,11 +29,11 @@ if __name__ == "__main__":
             exit(1)
 
         # SemanticTODO
-        _mySemantic = MySemanticAnalyzer(myAst)
-        context, scope = _mySemantic.analize()
-        
-        if _mySemantic.errors:
-            print(_mySemantic.errors[0])
+        semantic_analyzer = MySemanticAnalyzer(myAst)
+        semantic_analyzer.analyze()
+
+        for e in semantic_analyzer.errors:
+            print(e)
             exit(1)
 
 

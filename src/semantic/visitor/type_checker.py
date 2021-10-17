@@ -1,10 +1,8 @@
-from semantic.tools.error import incompatible_types_, wrong_signature_, incorrect_type_, too_many_args_, missing_params_, b_op_not_defined_, u_op_not_defined_, SemanticError
-from semantic.tools.type import Error_Type, Bool_Type, String_Type, Int_Type, Auto_Type
-from semantic.tools.methods import MethodError
+from semantic.tools.error import incompatible_types_, param_wrong_signature, invalid_SELFTYPE, self_name, incorrect_count_params_, read_only_, var_not_defined_, other_branch_declared_, wrong_type_, self_let_, SemanticError, SemanticException
+from semantic.tools.type import Error_Type
+from semantic.tools.scope import Scope
 from nodes import *
-from .visitor import *
-from semantic.tools.utils import get_common_basetype
-from .var_collector import scope_find
+from semantic.visitor import visitor
 
 
 class TypeChecker:
@@ -13,372 +11,475 @@ class TypeChecker:
         self.current_type = None
         self.current_method = None
         self.errors = errors
-        self.scope_object = None
-        self.call_atr = None
-        self.call_var = None
-        
 
     @visitor.on('node')
     def visit(self, node, scope):
         pass
 
     @visitor.when(ProgramNode)
-    def visit(self, node, scope):
-        self.scope_object = scope
-        for declaration in node.classes:
-            self.visit(declaration, scope)
-       
+    def visit(self, node, scope=None):
+        scope = Scope()
+        for c in node.classes:
+            self.visit(c, scope.create_child())
+        return scope
+
     @visitor.when(ClassNode)
     def visit(self, node, scope):
-        try:
-            new_scope = scope.childrens_dict[node.name]
-        except KeyError:
-            new_scope = scope_find(scope, node.name)
-
-        if new_scope == None: return
-
         self.current_type = self.context.get_type(node.name)
+        scope.define_variable('self', self.current_type)
 
-        for feat in node.features:
-            if isinstance(feat, Attr_Args_Node):
-                self.visit(feat, new_scope)
+        attributes = self.current_type.get_all_attributes()
+        for _, attr in attributes:
+            if attr.type.name == 'SELF_TYPE':
+                scope.define_variable(attr.name, self.current_type)
             else:
-                self.visit(feat, new_scope.childrens_dict[feat.id])
+                scope.define_variable(attr.name, attr.type)
+
+        for feature in node.features:
+            self.visit(feature, scope)
 
     @visitor.when(AttrInitNode)
     def visit(self, node, scope):
-        varinfo = scope.find_variable(node.name)
-        
-        self.call_atr = node.name
-        typex = self.visit(node.expression, scope)
-        self.call_atr = None
-        if not typex.conforms_to(varinfo.type):
-            self.errors.append(incompatible_types_ %(typex.name, varinfo.type.name))
-            return Error_Type()
+        try:
+            node_type = self.current_type.get_attribute(node.name).type
+        except SemanticException as ex:
+            node_type = Error_Type()
+            error =  SemanticError(ex.text, node.row, node.col, 'AttributeError')
+            self.errors.append(error)
+         
+        self.visit(node.expression, scope)
+        expr_type = node.expression.expr_type
 
-        varinfo.type = typex
-        return typex
+        if not expr_type.conforms_to(node_type):
+            error = SemanticError(incompatible_types_.replace(
+                '%s', expr_type.name, 1).replace('%s', node_type.name, 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
 
     @visitor.when(AttrDefNode)
     def visit(self, node, scope):
-        return self._get_type(node.attr_type)
+        try:
+            self.current_type.get_attribute(node.name)
+        except SemanticException as ex:
+            error = SemanticError(ex.text, node.row, node.col, 'AttributeError')
+            self.errors.append(error)
 
     @visitor.when(ClassMethodNode)
     def visit(self, node, scope):
-        parent = self.current_type.parent 
-        pnames = [param.name for param in node.params]
-        ptypes = [param.param_type for param in node.params]
-
-        for i in range(len(pnames)):
-            if pnames[i] == 'self':
-                self.errors.append(incompatible_types_ % (pnames[i], ptypes[i]))
-
-        self.current_method = method = self.current_type.get_method(node.name)
-        if parent is not None:
-            try:
-                old_meth = parent.get_method(node.name)
-                if old_meth.return_type.name != method.return_type.name:
-                    if node.return_type != 'SELF_TYPE':
-                        self.errors.append(wrong_signature_ % (node.name, parent.name))
-                
-                else:
-                    for name, type1, type2 in zip(ptypes, method.param_types, old_meth.param_types):
-                        if type1.name != type2.name:
-                            if name != 'SELF_TYPE':
-                                self.errors.append(wrong_signature_ % (node.name, parent.name))
-            except SemanticError:
-                pass
-
-        result = self.visit(node.expression, scope)
-        if not result.conforms_to(method.return_type):
-            self.errors.append(incompatible_types_ %(method.return_type.name, result.name))
-
-    @visitor.when(LetInitNode)
-    def visit(self, node, scope):
-
-        var_info = scope.find_variable(node.name)
-        vtype = var_info.type
-
-        self.call_var = node.name
-        typex = self.visit(node.expression, scope)
-        self.call_var = None
-        if not typex.conforms_to(var_info.type):
-            self.errors.append(incompatible_types_ %(vtype.name, typex.name))
-
-        return typex
-
-    @visitor.when(LetDefNode)
-    def visit(self, node, scope):
-
-        var_info = scope.find_variable(node.name)
-        vtype = var_info.type
-
-        return vtype
+        try:
+            self.current_method = self.current_type.get_method(node.name)
+        except SemanticException as ex:
+            error = SemanticError(ex.text, node.row, node.col, 'AttributeError')
+            self.errors.append(error)
         
-    @visitor.when(AssignNode)
-    def visit(self, node, scope):
-        vinfo = scope.find_variable(node.name)
-        vtype = vinfo.type
-            
-        typex = self.visit(node.expression, scope)
+        method_scope = scope.create_child()
 
-        if not typex.conforms_to(vtype):
-            self.errors.append(incompatible_types_ %(vtype.name, typex.name))
-        return typex
+        for param in node.params:
+            self.visit(param, method_scope)
+
+        self.visit(node.expression, method_scope)
+
+        expr_type = node.expression.expr_type
+
+        return_type = self.current_method.return_type
+
+        if expr_type.name == 'SELF_TYPE':
+            if not self.current_type.conforms_to(return_type):
+                error = SemanticError(incompatible_types_.replace(
+                    '%s', expr_type.name, 1).replace('%s', self.current_type.name, 1), node.row, node.col, 'TypeError')
+                self.errors.append(error)
+        elif not expr_type.conforms_to(return_type):
+            error = SemanticError(incompatible_types_.replace(
+                '%s', expr_type.name, 1).replace('%s', return_type.name, 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+
+
+    @visitor.when(FormalParamNode)
+    def visit(self, node, scope):
+        try:
+            node_type = self.context.get_type(node.param_type)
+            if node_type.name == 'SELF_TYPE':
+                node_type = Error_Type()
+                error = SemanticError(invalid_SELFTYPE, node.row, node.col)
+                self.errors.append(error)
+               
+        except SemanticException as ex:
+            node_type = Error_Type()
+            error = SemanticError(ex.text, node.row, node.col, 'TypeError')
+            self.errors.append(error)
+
+        if node.name == 'self':
+            error = SemanticError(self_name, node.row, node.col)
+            self.errors.append(error)            
+        elif not scope.is_local(node.name):
+            scope.define_variable(node.name, node_type)
+        else:
+            error = SemanticError(param_wrong_signature.replace(
+                '%s', node.name, 1).replace('%s', self.current_method.name, 1), node.row, node.col)
+            self.errors.append(error)
 
     @visitor.when(DynamicCallNode)
     def visit(self, node, scope):
+        self.visit(node.obj, scope)
+        instance_type = node.obj.expr_type
+
+        if instance_type.name == 'SELF_TYPE':
+            instance_type = scope.find_variable('self').type
         try:
-            stype = scope.find_variable(node.obj.name).type
-        except AttributeError:
-            #cuando es funcion
-            stype = self.visit(node.obj, scope)
+            instance_method = instance_type.get_method(node.method)
 
-        if stype.name == '<error>':
-            stype = self.visit(node.obj, scope)
+            if len(node.args) == len(instance_method.param_types):
+                for arg, param_type in zip(node.args, instance_method.param_types):
+                    self.visit(arg, scope)
+                    arg_type = arg.expr_type
 
-        if stype.name == '<error>':
-            stype_scope = self.scope_object
-        else: stype_scope = child_scope_find(self.scope_object, stype.name)
+                    if not arg_type.conforms_to(param_type):
+                        error = SemanticError(incompatible_types_.replace(
+                            '%s', arg_type.name, 1).replace('%s', param_type.name, 1), node.row, node.col, 'TypeError')
+                        self.errors.append(error)
+            else:
+                error = SemanticError(incorrect_count_params_.replace("%s", instance_method.name, 1).replace("%s", instance_type.name, 1).replace("%s", str(len(instance_method.param_types)), 1), node.row, node.col)
+                self.errors.append(error)
 
-        meth = self._get_method(node.method, stype_scope)
-        self._check_args(meth, scope, node.args)
+            if instance_method.return_type.name == 'SELF_TYPE':
+                node_type = instance_type
+            else:
+                node_type = instance_method.return_type
 
-        if meth.return_type.name != 'SELF_TYPE':
-            self.define_call(str(node), meth.return_type, scope)
-        else:
-            self.define_call(str(node), stype, scope)
-        
-        return meth.return_type
+        except SemanticException as ex:
+            node_type = Error_Type()
+            error = SemanticError(ex.text, node.row, node.col, 'AttributeError')
+            self.errors.append(error)
+            
+        node.expr_type = node_type
 
     @visitor.when(StaticCallNode)
     def visit(self, node, scope):
+        self.visit(node.obj, scope)
+        instance_type = node.obj.expr_type
+
         try:
-            stype = scope.find_variable(node.obj.name).type
-        except AttributeError:
-            #cuando es funcion
-            stype = self.visit(node.obj, scope)
+            static_type = self.context.get_type(node.static_type)
+        except SemanticException as ex:
+            static_type = Error_Type()
+            error = SemanticError(ex.text, node.row, node.col, 'TypeError')
+            self.errors.append(error)
+         
+        if not instance_type.conforms_to(static_type):
+            error = SemanticError(incompatible_types_.replace(
+                '%s', instance_type.name, 1).replace('%s', static_type.name, 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
 
-        parent_type = self._get_type(node.static_type)
+        try:
+            method = static_type.get_method(node.method)
 
-        if stype.name == '<error>':
-            stype = self.visit(node.obj, scope)
+            if len(node.args) == len(method.param_types):
+                for arg, param_type in zip(node.args, method.param_types):
+                    self.visit(arg, scope)
+                    arg_type = arg.expr_type
 
-        if not parent_type.conforms_to(stype):
-            self.errors.append(incompatible_types_ % (typex.name, obj.name))
-            return Error_Type()
-        
-        if parent_type.name == '<error>':
-            parent_type_scope = self.scope_object
-        else:    
-            parent_type_scope = child_scope_find(self.scope_object, parent_type.name)
-        
-        meth = self._get_method(node.method, parent_type_scope)
-        self._check_args(meth, scope, node.args)
-        
-        if meth.return_type.name != 'SELF_TYPE':
-            self.define_call(str(node), meth.return_type, scope)
+                    if not arg_type.conforms_to(param_type):
+                        error = SemanticError(incompatible_types_.replace(
+                            '%s', arg_type.name, 1).replace('%s', param_type.name, 1), node.row, node.col, 'TypeError')
+                        self.errors.append(error)
+            else:
+                error = SemanticError( incorrect_count_params_.replace('%s', method.name, 1).replace('%s', static_type.name, 1).replace('%s', str(len(method.param_types)), 1), node.row, node.col)
+                self.errors.append(error)
+
+            if method.return_type.name == 'SELF_TYPE':
+                node_type = instance_type
+            node_type = method.return_type
+
+        except SemanticException as ex:
+            error = SemanticError(ex.text, node.row, node.col, 'AttributeError')
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        node.expr_type = node_type
+
+    @visitor.when(AssignNode)
+    def visit(self, node, scope):
+        self.visit(node.expression, scope)
+        node_type = node.expression.expr_type
+
+        if scope.is_defined(node.name):
+            var = scope.find_variable(node.name)
+
+            if var.name == 'self':
+                error = SemanticError(read_only_, node.row, node.col)
+                self.errors.append(error)
+                node_type = Error_Type()
+            elif not node_type.conforms_to(var.type):
+                error = SemanticError(incompatible_types_.replace(
+                    '%s', node_type.name, 1).replace('%s', var.type.name, 1), node.row, node.col, 'TypeError')
+                self.errors.append(error)
+                node_type = Error_Type()
         else:
-            self.define_call(str(node), stype, scope)
+            error = SemanticError(var_not_defined_.replace(
+                '%s', node.name, 1), node.row, node.col, 'NameError')
+            self.errors.append(error)
+            node_type = Error_Type()
 
-        return meth.return_type
+        node.expr_type = node_type
 
-
-    @visitor.when(IntegerNode)
+    @visitor.when(CaseNode)
     def visit(self, node, scope):
-        return Int_Type()
+        self.visit(node.expression, scope)
+        action_expr_types = []
+        var_declared = []
 
-    @visitor.when(BooleanNode)
-    def visit(self, node, scope):
-        return Bool_Type()
+        for action in node.act_list:
+            var_type = action.act_type
+            if not var_type in var_declared:
+                var_declared.append(var_type)
+            else:
+                error = SemanticError(other_branch_declared_.replace("%s", var_type, 1), action.row, action.col)
+                self.errors.append(error)
+            self.visit(action, scope.create_child())
+            action_expr_types.append(action.expr_type)
 
-    @visitor.when(StringNode)
-    def visit(self, node, scope):
-        return String_Type()
+        t_0 = action_expr_types.pop(0)
+        node_type = t_0.multiple_join(action_expr_types)
+       
+        node.expr_type = node_type
 
-    @visitor.when(IdNode)
+    @visitor.when(ActionNode)
     def visit(self, node, scope):
         try:
-            return scope.find_variable(node.name).type
-        except AttributeError:
-            return scope.find_variable(node.name)
+            action_type = self.context.get_type(node.act_type)
+        except SemanticException as ex:
+            error = SemanticError(ex.text, node.row, node.col , 'TypeError')
+            self.errors.append(error)
+            action_type = Error_Type()
 
-    @visitor.when(NewNode)
+        scope.define_variable(node.name, action_type)
+
+        self.visit(node.body, scope)
+        node.expr_type = node.body.expr_type
+
+    @visitor.when(IfNode)
     def visit(self, node, scope):
-        return self._get_type(node.name)
+        self.visit(node.predicate, scope)
+        predicate_type = node.predicate.expr_type
+
+        if predicate_type.name != 'Bool':
+            error = SemanticError(wrong_type_.replace('%s', 'Bool', 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+
+        self.visit(node.then_expr, scope)
+        then_type = node.then_expr.expr_type
+        self.visit(node.else_expr, scope)
+        else_type = node.else_expr.expr_type
+
+        node.expr_type = then_type.join(else_type)
+  
 
     @visitor.when(WhileNode)
     def visit(self, node, scope):
-        cond = self.visit(node.predicate, scope)
-        
-        if cond.name != 'Bool':
-            self.errors.append(incorrect_type_ % (cond.name, 'Bool'))   
-        return self.visit(node.expression, scope)
+        self.visit(node.predicate, scope)
+        predicate_type = node.predicate.expr_type
+
+        if predicate_type.name != 'Bool':
+            error = SemanticError(wrong_type_.replace('%s', 'Bool', 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+
+        self.visit(node.expression, scope)
+
+        node.expr_type = self.context.get_type('Object')
+
+    @visitor.when(BlockNode)
+    def visit(self, node, scope):
+        for expr in node.expr_list:
+            self.visit(expr, scope)
+
+        node.expr_type = node.expr_list[-1].expr_type
+
+    @visitor.when(LetNode)
+    def visit(self, node, scope):
+        let_scope = scope.create_child()
+    
+        for var in node.init_list:
+            self.visit(var, let_scope)
+
+        self.visit(node.body, let_scope)
+
+        node.expr_type = node.body.expr_type
+
+    @visitor.when(LetInitNode)
+    def visit(self, node, scope):
+        try:
+            node_type = self.context.get_type(node.let_type)
+            if node_type.name == 'SELF_TYPE':
+                node_type = scope.find_variable('self').type
+        except SemanticException as ex:
+            error = SemanticError(ex.text, node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = ErrorType()
+
+        self.visit(node.expression, scope)
+        expr_type = node.expression.expr_type
+
+        if not expr_type.conforms_to(node_type):
+            error = SemanticError(incompatible_types_.replace(
+                '%s', expr_type.name, 1).replace('%s', node_type.name, 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+
+        if node.name == 'self':
+            error = SemanticError(self_let_, node.row, node.col)
+            self.errors.append(error)  
+        else:
+            if scope.is_local(node.name):
+                scope.remove_local(node.name)
+
+            scope.define_variable(node.name, node_type)
+
+    @visitor.when(LetDefNode)
+    def visit(self, node, scope):
+        try:
+            node_type = self.context.get_type(node.let_type)
+            if node_type.name == 'SELF_TYPE':
+                node_type = scope.find_variable('self').type
+        except SemanticException as ex:
+            error = SemanticError(ex.text, node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        if node.name == 'self':
+            error = SemanticError(self_let_, node.row, node.col)
+            self.errors.append(error)  
+        else:
+            if scope.is_local(node.name):
+                scope.remove_local(node.name)
+
+            scope.define_variable(node.name, node_type)
+
+    @visitor.when(NewNode)
+    def visit(self, node, scope):
+        try:
+            node_type = self.context.get_type(node.new_type)
+            if node_type.name == 'SELF_TYPE':
+                node_type = scope.find_variable('self').type
+        except SemanticException as ex:
+            error = SemanticError(ex.text, node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        node.expr_type = node_type
 
     @visitor.when(IsVoidNode)
     def visit(self, node, scope):
         self.visit(node.expression, scope)
-        return Bool_Type()
+        node.expr_type = self.context.get_type('Bool')
 
-    @visitor.when(IfNode)
-    def visit(self, node, scope):
-        cond = self.visit(node.predicate, scope)
-
-        if cond.name != 'Bool':
-            self.errors.append(incorrect_type_ % (cond.name, 'Bool'))
-        
-        true_type = self.visit(node.then_expr, scope)
-        false_type = self.visit(node.else_expr, scope)
-      
-        if true_type.conforms_to(false_type):
-            return false_type
-        elif false_type.conforms_to(true_type):
-            return true_type
-        else:
-            self.errors.append(incompatible_types_ % (false_type.name, true_type.name))
-            return Error_Type()
-
-    @visitor.when(BlockNode)
-    def visit(self, node, scope):
-        value = None
-        for exp in node.expr_list:
-            value = self.visit(exp, scope)
-        return value
-
-    @visitor.when(LetNode)
-    def visit(self, node, scope):
-        try:
-            new_scope = scope.childrens_let_dict[node]
-        except KeyError:
-            new_scope = scope
-
-        for init in node.init_list:
-            self.visit(init, new_scope)
-        return self.visit(node.expression, new_scope)
-    
-    @visitor.when(CaseNode) 
-    def visit(self, node, scope):
-
-        type_expr = self.visit(node.expression, scope)
-
-        new_scope = scope.childrens_case_dict[node]
-
-        types = []
-        var_types = []
-        for case in node.act_list:
-            new_n_scope = new_scope.childrens_case_dict[case]
-            t, vt = self.visit(case, new_n_scope)
-
-            types.append(self._get_type(t.name))
-            var_types.append(self._get_type(vt.type.name))
-
-            if not t.conforms_to(vt.type):
-                self.errors.append(incompatible_types_ % (t.name, vt.type.name))
-                return Error_Type()
-            else:
-                vt.type = t
-
-        for t in var_types:
-            if not type_expr.conforms_to(t):
-                self.errors.append(incompatible_types_ % (t.name, type_expr.name))
-                return Error_Type()
-
-        return get_common_basetype(types)
-
-    @visitor.when(ActionNode)
-    def visit(self, node, scope):
-        var_info = scope.find_variable(node.name)
-        typex = self.visit(node.body, scope)
-        return typex, var_info
-            
     @visitor.when(ArithBinOpNode)
     def visit(self, node, scope):
-        ltype = self.visit(node.left, scope)
-        rtype = self.visit(node.right, scope)
-        if ltype != rtype != Int_Type():
-            self.errors.append(b_op_not_defined_ %('Arithmetic', ltype.name, rtype.name))
-            return Error_Type()
-        return Int_Type()
+        node_type = self.context.get_type('Int')
+
+        self.visit(node.left, scope)
+        left_type = node.left.expr_type
+
+        if left_type.name != 'Int':
+            error = SemanticError(wrong_type_.replace('%s', 'Int', 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        self.visit(node.right, scope)
+        right_type = node.right.expr_type
+
+        if right_type.name != 'Int':
+            error = SemanticError(wrong_type_.replace('%s', 'Int', 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        node.expr_type = node_type
 
     @visitor.when(LogicBinOpNode)
     def visit(self, node, scope):
-        ltype = self.visit(node.left, scope)
-        rtype = self.visit(node.right, scope)
-        if ltype != rtype != Int_Type():
-            self.errors.append(b_op_not_defined_ %('Logical', ltype.name, rtype.name))
-            return Error_Type()
+        node_type = self.context.get_type('Bool')
 
-        return Bool_Type()
+        self.visit(node.left, scope)
+        left_type = node.left.expr_type
 
-    @visitor.when(LogicNotNode)
-    def visit(self, node, scope):
-        ltype = self.visit(node.expression, scope)
-        if ltype != Bool_Type():
-            self.errors.append(u_op_not_defined_ %('Logical', ltype.name))
-            return Error_Type()
+        if left_type.name != 'Int':
+            error = SemanticError(wrong_type_.replace('%s', 'Int', 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = Error_Type()
 
-        return Bool_Type()
+        self.visit(node.right, scope)
+        right_type = node.right.expr_type
+
+        if right_type.name != 'Int':
+            error = SemanticError(wrong_type_.replace('%s', 'Int', 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        node.expr_type = node_type
 
     @visitor.when(NotNode)
     def visit(self, node, scope):
-        ltype = self.visit(node.expression, scope)
-        if ltype != Int_Type():
-            self.errors.append(u_op_not_defined_ %('Arithmetic', ltype.name))
-            return Error_Type()
-        return Int_Type()
+        node_type = self.context.get_type('Bool')
+
+        self.visit(node.expression, scope)
+        expr_type = node.expression.expr_type
+
+        if expr_type.name != 'Bool':      
+            error = SemanticError(wrong_type_.replace('%s', 'Bool', 1), node.row, node.col, 'TypeError')      
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        node.expr_type = node_type
+
+    @visitor.when(LogicNotNode)
+    def visit(self, node, scope):
+        node_type = self.context.get_type('Int')
+
+        self.visit(node.expression, scope)
+        expr_type = node.expression.expr_type
+
+        if expr_type.name != 'Int':
+            error = SemanticError(wrong_type_.replace('%s', 'Int', 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        node.expr_type = node_type
+
+    @visitor.when(EqualsNode)
+    def visit(self, node, scope):
+        node_type = self.context.get_type('Bool')
+
+        self.visit(node.left, scope)
+        left_type = node.left.expr_type
+
+        self.visit(node.right, scope)
+        right_type = node.right.expr_type
+
+        if (left_type.name in ['Int', 'Bool', 'String'] or right_type.name in ['Int', 'Bool', 'String']) and left_type.name != right_type.name:
+            error = SemanticError(wrong_type_.replace('%s', left_type.name, 1), node.row, node.col, 'TypeError')
+            self.errors.append(error)
+            node_type = Error_Type()
+
+        node.expr_type = node_type
 
 
-    def _get_type(self, ntype):
-        try:
-            return self.context.get_type(ntype)
-        except SemanticError as e:
-            self.errors.append(e.text)
-            return Error_Type()
-
-    def _get_method(self, name, scope):
-        try:
-            typex = self._get_type(scope.name)
-            return typex.get_method(name)
-        except SemanticError as e:
-            if typex != Error_Type() and typex != Auto_Type():
-                if scope.name == 'Object':
-                    self.errors.append(e.text)
-                else:
-                    return self._get_method(name, scope.parent.get_class_scope())
-            return MethodError(name, [], [], Error_Type())
-
-
-    def _check_args(self, meth, scope, args):
-        arg_types = [self.visit(arg, scope) for arg in args]
-        
-        if len(arg_types) > len(meth.param_types):
-            self.errors.append(too_many_args_ % meth.name)
-        elif len(arg_types) < len(meth.param_types):
-            for arg in meth.param_names[len(arg_types):]:
-                self.errors.append(missing_params_ % (arg, meth.name))
-
-        for atype, ptype in zip(arg_types, meth.param_types):
-            if not atype.conforms_to(ptype):
-                self.errors.append(incompatible_types_ % (ptype.name, atype.name))
-
-    def define_call(self, node_id, return_type, scope):
-        var_atr = None
-        if self.call_atr != None: 
-            var_atr = self.call_atr
-        elif self.call_var != None:
-            var_atr = self.call_var
+    @visitor.when(IdNode)
+    def visit(self, node, scope):
+        if scope.is_defined(node.name):
+            node_type = scope.find_variable(node.name).type
         else:
-            var_atr = scope.name 
+            error = SemanticError(var_not_defined_.replace(
+                '%s', node.name, 1), node.row, node.col, 'NameError')
+            self.errors.append(error)
+            node_type = Error_Type()
 
-        scope.define_call(node_id, return_type, var_atr)
+        node.expr_type = node_type
 
+    @visitor.when(IntegerNode)
+    def visit(self, node, scope):
+        node.expr_type = self.context.get_type('Int')
 
-def child_scope_find(scope, name):
-        try:
-            return scope.childrens_dict[name]
-        except KeyError:
-            for child in scope.childrens:
-                solve = child_scope_find(child, name)
-                if not solve is None: 
-                    return solve
-            return None
+    @visitor.when(StringNode)
+    def visit(self, node, scope):
+        node.expr_type = self.context.get_type('String')
+
+    @visitor.when(BooleanNode)
+    def visit(self, node, scope):
+        node.expr_type = self.context.get_type('Bool')

@@ -1,6 +1,3 @@
-import itertools as itt
-
-
 class Attribute:
     def __init__(self, name, typex):
         self.name = name
