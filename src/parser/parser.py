@@ -26,6 +26,7 @@ class MyParser():
         self.parser = yacc.yacc(module=self, write_tables=write_tables, debug=debug, optimize=optimize,
                                 outputdir=outputdir, tabmodule=yacctab, debuglog=debuglog, errorlog=yacc.NullLogger())
 
+    # Run parser
     def parse(self, _cool_program):
         return self.parser.parse(_cool_program)
     
